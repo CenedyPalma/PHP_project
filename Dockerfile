@@ -15,27 +15,17 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /app
 
-# Copy composer files first for better caching
-COPY composer.json composer.lock ./
-
-# Install dependencies
-RUN composer install --no-dev --optimize-autoloader --no-scripts
-
-# Copy application code
+# Copy all files
 COPY . .
 
-# Run post-install scripts
-RUN composer run-script post-install-cmd || true
+# Install dependencies
+RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
 
-# Clear and warm cache
-RUN php bin/console cache:clear --env=prod --no-debug || true
-RUN php bin/console cache:warmup --env=prod --no-debug || true
+# Set permissions for cache/logs
+RUN mkdir -p var/cache var/log && chmod -R 777 var/
 
-# Set permissions
-RUN chmod -R 777 var/
-
-# Expose port
+# Expose port (Railway sets PORT env variable)
 EXPOSE 8080
 
-# Start command
-CMD php bin/console doctrine:schema:update --force --env=prod 2>/dev/null; php -S 0.0.0.0:${PORT:-8080} -t public
+# Simple start command - just start the server immediately
+CMD ["sh", "-c", "php -S 0.0.0.0:${PORT:-8080} -t public"]
