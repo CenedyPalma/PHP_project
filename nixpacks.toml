@@ -1,14 +1,11 @@
-runtime = "php@8.2"
-
 [phases.setup]
-aptPkgs = ["...", "php8.2-mysql", "php8.2-pdo", "php8.2-xml", "php8.2-mbstring", "php8.2-intl"]
+nixPkgs = ["php82", "php82Packages.composer", "php82Extensions.pdo", "php82Extensions.pdo_mysql", "php82Extensions.mbstring", "php82Extensions.xml", "php82Extensions.intl", "php82Extensions.ctype", "php82Extensions.iconv", "php82Extensions.curl", "php82Extensions.openssl"]
+
+[phases.install]
+cmds = ["composer install --no-dev --optimize-autoloader --no-interaction"]
 
 [phases.build]
-cmds = [
-    "composer install --no-dev --optimize-autoloader",
-    "php bin/console cache:clear --env=prod --no-debug || true",
-    "php bin/console cache:warmup --env=prod --no-debug || true"
-]
+cmds = ["php bin/console cache:clear --env=prod --no-warmup", "php bin/console cache:warmup --env=prod"]
 
 [start]
-cmd = "php bin/console doctrine:schema:update --force --env=prod && php -S 0.0.0.0:${PORT:-8080} -t public"
+cmd = "php -S 0.0.0.0:${PORT:-8080} -t public"
