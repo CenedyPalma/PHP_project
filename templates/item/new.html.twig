@@ -1,0 +1,84 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Add Item to {{ inventory.name }}{% endblock %}
+
+{% block body %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ path('app_home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ path('app_inventory_show', {id: inventory.id}) }}">{{ inventory.name }}</a></li>
+        <li class="breadcrumb-item active">Add Item</li>
+    </ol>
+</nav>
+
+<h2><i class="bi bi-plus-circle"></i> Add New Item</h2>
+<p class="text-muted">Adding to: <strong>{{ inventory.name }}</strong></p>
+<hr>
+
+{% set activeFields = inventory.activeFields %}
+
+<form method="post">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">Item Details</div>
+                <div class="card-body">
+                    {% if activeFields|length == 0 %}
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i> This inventory has no custom fields defined.
+                        </div>
+                    {% else %}
+                        {% for field in activeFields %}
+                        <div class="mb-3">
+                            <label for="{{ field.type }}{{ field.index }}" class="form-label">
+                                {{ field.name }}
+                                {% if field.desc %}<small class="text-muted" title="{{ field.desc }}"><i class="bi bi-info-circle"></i></small>{% endif %}
+                            </label>
+                            
+                            {% if field.type == 'string' %}
+                                <input type="text" class="form-control" id="{{ field.type }}{{ field.index }}" 
+                                       name="{{ field.type }}{{ field.index }}">
+                            
+                            {% elseif field.type == 'text' %}
+                                <textarea class="form-control" id="{{ field.type }}{{ field.index }}" 
+                                          name="{{ field.type }}{{ field.index }}" rows="3"></textarea>
+                            
+                            {% elseif field.type == 'int' %}
+                                <input type="number" class="form-control" id="{{ field.type }}{{ field.index }}" 
+                                       name="{{ field.type }}{{ field.index }}">
+                            
+                            {% elseif field.type == 'bool' %}
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="{{ field.type }}{{ field.index }}" 
+                                           name="{{ field.type }}{{ field.index }}">
+                                    <label class="form-check-label" for="{{ field.type }}{{ field.index }}">Yes</label>
+                                </div>
+                            
+                            {% elseif field.type == 'link' %}
+                                <input type="url" class="form-control" id="{{ field.type }}{{ field.index }}" 
+                                       name="{{ field.type }}{{ field.index }}" placeholder="https://...">
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">Preview</div>
+                <div class="card-body">
+                    <p><strong>Next ID:</strong> <code>{{ inventory.generateNextCustomId() }}</code></p>
+                </div>
+            </div>
+            <div class="d-grid gap-2 mt-3">
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="bi bi-check-lg"></i> Create Item
+                </button>
+                <a href="{{ path('app_inventory_show', {id: inventory.id}) }}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}

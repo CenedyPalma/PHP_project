@@ -1,0 +1,98 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Item: {{ item.customId }}{% endblock %}
+
+{% block body %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ path('app_home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ path('app_inventory_show', {id: item.inventory.id}) }}">{{ item.inventory.name }}</a></li>
+        <li class="breadcrumb-item active">{{ item.customId }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h2><code>{{ item.customId }}</code></h2>
+        <p class="text-muted">
+            Added by <a href="{{ path('app_user_profile', {id: item.createdBy.id}) }}">{{ item.createdBy.name }}</a>
+            on {{ item.createdAt|date('M d, Y') }}
+        </p>
+    </div>
+    <div>
+        <span class="like-btn btn btn-outline-danger {% if item.isLikedByUser(app.user) %}liked{% endif %}" 
+              data-item-id="{{ item.id }}" style="cursor:pointer;">
+            <i class="bi bi-heart{% if item.isLikedByUser(app.user) %}-fill{% endif %}"></i>
+            <span class="likes-count">{{ item.likesCount }}</span> Likes
+        </span>
+        {% if app.user %}
+            <a href="{{ path('app_item_edit', {id: item.id}) }}" class="btn btn-outline-primary">
+                <i class="bi bi-pencil"></i> Edit
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+{% set activeFields = item.inventory.activeFields %}
+
+<div class="card">
+    <div class="card-header">Item Details</div>
+    <div class="card-body">
+        <table class="table">
+            <tbody>
+                {% for field in activeFields %}
+                <tr>
+                    <th style="width: 30%">{{ field.name }}</th>
+                    <td>
+                        {% set val = item.getFieldValue(field.type, field.index) %}
+                        {% if field.type == 'bool' %}
+                            {% if val %}
+                                <span class="badge bg-success"><i class="bi bi-check"></i> Yes</span>
+                            {% else %}
+                                <span class="badge bg-secondary"><i class="bi bi-x"></i> No</span>
+                            {% endif %}
+                        {% elseif field.type == 'link' and val %}
+                            <a href="{{ val }}" target="_blank">{{ val }}</a>
+                        {% elseif field.type == 'text' and val %}
+                            {{ val|nl2br }}
+                        {% elseif val is null or val == '' %}
+                            <span class="text-muted">-</span>
+                        {% else %}
+                            {{ val }}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.like-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const itemId = this.dataset.itemId;
+            fetch('/item/' + itemId + '/like', { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        const icon = this.querySelector('i');
+                        const count = this.querySelector('.likes-count');
+                        if (data.action === 'liked') {
+                            icon.classList.replace('bi-heart', 'bi-heart-fill');
+                            this.classList.add('liked');
+                        } else {
+                            icon.classList.replace('bi-heart-fill', 'bi-heart');
+                            this.classList.remove('liked');
+                        }
+                        count.textContent = data.likesCount;
+                    }
+                });
+        });
+    });
+});
+</script>
+{% endblock %}

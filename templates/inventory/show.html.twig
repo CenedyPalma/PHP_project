@@ -1,0 +1,309 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ inventory.name }}{% endblock %}
+
+{% block body %}
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h2>{{ inventory.name }}</h2>
+        <p class="text-muted">
+            Created by <a href="{{ path('app_user_profile', {id: inventory.createdBy.id}) }}">{{ inventory.createdBy.name }}</a>
+            on {{ inventory.createdAt|date('M d, Y') }}
+        </p>
+        {% for tag in inventory.tags %}
+            <a href="{{ path('app_search', {tag: tag}) }}" class="badge bg-secondary text-decoration-none">{{ tag }}</a>
+        {% endfor %}
+    </div>
+    <div>
+        {% if app.user and (app.user == inventory.createdBy or is_granted('ROLE_ADMIN')) %}
+            <a href="{{ path('app_inventory_edit', {id: inventory.id}) }}" class="btn btn-outline-primary">
+                <i class="bi bi-gear"></i> Settings
+            </a>
+        {% endif %}
+        {% if app.user %}
+            <a href="{{ path('app_item_new', {inventoryId: inventory.id}) }}" class="btn btn-success">
+                <i class="bi bi-plus"></i> Add Item
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+{% if inventory.description %}
+<div class="card mb-4">
+    <div class="card-body">
+        {{ inventory.description|nl2br }}
+    </div>
+</div>
+{% endif %}
+
+<!-- Tabs -->
+<ul class="nav nav-tabs" id="inventoryTabs">
+    <li class="nav-item">
+        <a class="nav-link active" data-bs-toggle="tab" href="#items">
+            <i class="bi bi-list"></i> Items ({{ inventory.items|length }})
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="tab" href="#discussion">
+            <i class="bi bi-chat-dots"></i> Discussion ({{ inventory.posts|length }})
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="tab" href="#fields">
+            <i class="bi bi-sliders"></i> Fields
+        </a>
+    </li>
+</ul>
+
+<div class="tab-content mt-3">
+    <!-- Items Tab -->
+    <div class="tab-pane fade show active" id="items">
+        {% set activeFields = inventory.activeFields %}
+        {% if inventory.items|length > 0 %}
+        
+        <!-- Toolbar (NO buttons inside table rows!) -->
+        <div class="mb-2 d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-outline-primary" id="viewSelectedBtn" disabled>
+                <i class="bi bi-eye"></i> View Selected
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger" id="deleteSelectedBtn" disabled>
+                <i class="bi bi-trash"></i> Delete Selected
+            </button>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-hover" id="itemsTable">
+                <thead class="table-light">
+                    <tr>
+                        <th><input type="checkbox" class="form-check-input" id="selectAll"></th>
+                        <th>ID</th>
+                        {% for field in activeFields %}
+                            {% if field.inTable %}
+                                <th title="{{ field.desc }}">{{ field.name }}</th>
+                            {% endif %}
+                        {% endfor %}
+                        <th>Likes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in inventory.items %}
+                    <tr data-item-id="{{ item.id }}">
+                        <td><input type="checkbox" class="form-check-input item-checkbox" value="{{ item.id }}"></td>
+                        <td><code>{{ item.customId }}</code></td>
+                        {% for field in activeFields %}
+                            {% if field.inTable %}
+                                <td>
+                                    {% set val = item.getFieldValue(field.type, field.index) %}
+                                    {% if field.type == 'bool' %}
+                                        {% if val %}<i class="bi bi-check-lg text-success"></i>{% else %}<i class="bi bi-x-lg text-danger"></i>{% endif %}
+                                    {% elseif field.type == 'link' and val %}
+                                        <a href="{{ val }}" target="_blank"><i class="bi bi-link-45deg"></i></a>
+                                    {% else %}
+                                        {{ val ?? '-' }}
+                                    {% endif %}
+                                </td>
+                            {% endif %}
+                        {% endfor %}
+                        <td>
+                            <span class="like-btn {% if item.isLikedByUser(app.user) %}liked{% endif %}" 
+                                  data-item-id="{{ item.id }}" style="cursor:pointer;">
+                                <i class="bi bi-heart{% if item.isLikedByUser(app.user) %}-fill{% endif %}"></i>
+                                <span class="likes-count">{{ item.likesCount }}</span>
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> No items in this inventory yet.
+            {% if app.user %}
+                <a href="{{ path('app_item_new', {inventoryId: inventory.id}) }}">Add the first item!</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Discussion Tab -->
+    <div class="tab-pane fade" id="discussion">
+        <div id="discussionContainer" class="mb-3" style="max-height: 400px; overflow-y: auto;">
+            {% for post in inventory.posts %}
+            <div class="card mb-2">
+                <div class="card-body py-2">
+                    <div class="d-flex justify-content-between">
+                        <strong>
+                            <a href="{{ path('app_user_profile', {id: post.author.id}) }}">{{ post.author.name }}</a>
+                        </strong>
+                        <small class="text-muted">{{ post.createdAt|date('M d, Y H:i') }}</small>
+                    </div>
+                    <div class="mt-1">{{ post.content|nl2br }}</div>
+                </div>
+            </div>
+            {% else %}
+            <p class="text-muted" id="noPostsMsg">No discussion yet. Start the conversation!</p>
+            {% endfor %}
+        </div>
+
+        {% if app.user %}
+        <form id="discussionForm" method="post" action="{{ path('app_inventory_discussion', {id: inventory.id}) }}">
+            <div class="input-group">
+                <textarea class="form-control" name="content" placeholder="Write a message..." rows="2" required></textarea>
+                <button class="btn btn-primary" type="submit"><i class="bi bi-send"></i></button>
+            </div>
+        </form>
+        {% else %}
+        <div class="alert alert-warning">
+            <a href="{{ path('app_login') }}">Login</a> to participate in the discussion.
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Fields Tab -->
+    <div class="tab-pane fade" id="fields">
+        <table class="table">
+            <thead>
+                <tr><th>Type</th><th>Field Name</th><th>Description</th><th>In Table</th></tr>
+            </thead>
+            <tbody>
+                {% for field in activeFields %}
+                <tr>
+                    <td><span class="badge bg-info">{{ field.type }}</span></td>
+                    <td>{{ field.name }}</td>
+                    <td>{{ field.desc }}</td>
+                    <td>{% if field.inTable %}<i class="bi bi-check text-success"></i>{% else %}-{% endif %}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="text-muted">No custom fields defined.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Select all checkbox
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.item-checkbox');
+    const viewBtn = document.getElementById('viewSelectedBtn');
+    const deleteBtn = document.getElementById('deleteSelectedBtn');
+
+    function updateToolbar() {
+        const selected = document.querySelectorAll('.item-checkbox:checked');
+        viewBtn.disabled = selected.length !== 1;
+        deleteBtn.disabled = selected.length === 0;
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            checkboxes.forEach(cb => cb.checked = this.checked);
+            updateToolbar();
+        });
+    }
+
+    checkboxes.forEach(cb => cb.addEventListener('change', updateToolbar));
+
+    // View selected (row click navigates to detail)
+    if (viewBtn) {
+        viewBtn.addEventListener('click', function() {
+            const selected = document.querySelector('.item-checkbox:checked');
+            if (selected) {
+                window.location.href = '/item/' + selected.value;
+            }
+        });
+    }
+
+    // Row click to view
+    document.querySelectorAll('#itemsTable tbody tr').forEach(row => {
+        row.style.cursor = 'pointer';
+        row.addEventListener('click', function(e) {
+            if (e.target.type !== 'checkbox' && !e.target.classList.contains('like-btn') && !e.target.closest('.like-btn')) {
+                window.location.href = '/item/' + this.dataset.itemId;
+            }
+        });
+    });
+
+    // Like functionality
+    document.querySelectorAll('.like-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const itemId = this.dataset.itemId;
+            fetch('/item/' + itemId + '/like', { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        const icon = this.querySelector('i');
+                        const count = this.querySelector('.likes-count');
+                        if (data.action === 'liked') {
+                            icon.classList.replace('bi-heart', 'bi-heart-fill');
+                            this.classList.add('liked');
+                        } else {
+                            icon.classList.replace('bi-heart-fill', 'bi-heart');
+                            this.classList.remove('liked');
+                        }
+                        count.textContent = data.likesCount;
+                    }
+                });
+        });
+    });
+
+    // Discussion polling (every 3 seconds)
+    const container = document.getElementById('discussionContainer');
+    let lastPostId = {{ inventory.posts|length > 0 ? inventory.posts|last.id : 0 }};
+    
+    setInterval(function() {
+        fetch('{{ path('app_inventory_discussion', {id: inventory.id}) }}?after=' + lastPostId, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.posts && data.posts.length > 0) {
+                const noMsg = document.getElementById('noPostsMsg');
+                if (noMsg) noMsg.remove();
+                
+                data.posts.forEach(function(post) {
+                    const html = `
+                        <div class="card mb-2">
+                            <div class="card-body py-2">
+                                <div class="d-flex justify-content-between">
+                                    <strong><a href="/user/${post.authorId}">${post.author}</a></strong>
+                                    <small class="text-muted">${post.createdAt}</small>
+                                </div>
+                                <div class="mt-1">${post.content}</div>
+                            </div>
+                        </div>
+                    `;
+                    container.insertAdjacentHTML('beforeend', html);
+                    lastPostId = post.id;
+                });
+                container.scrollTop = container.scrollHeight;
+            }
+        });
+    }, 3000);
+
+    // Submit discussion form via AJAX
+    const form = document.getElementById('discussionForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(form);
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    form.reset();
+                }
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

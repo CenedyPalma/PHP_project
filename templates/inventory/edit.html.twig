@@ -1,0 +1,461 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Settings: {{ inventory.name }}{% endblock %}
+
+{% block body %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ path('app_home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ path('app_inventory_show', {id: inventory.id}) }}">{{ inventory.name }}</a></li>
+        <li class="breadcrumb-item active">Settings</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-gear"></i> Inventory Settings</h2>
+    <span class="badge bg-secondary" id="saveStatus">Saved</span>
+</div>
+
+<input type="hidden" id="inventoryId" value="{{ inventory.id }}">
+<input type="hidden" id="inventoryVersion" value="{{ inventory.version }}">
+
+<!-- Settings Tabs -->
+<ul class="nav nav-tabs" id="settingsTabs">
+    <li class="nav-item">
+        <a class="nav-link active" data-bs-toggle="tab" href="#general">
+            <i class="bi bi-sliders"></i> General
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="tab" href="#idFormat">
+            <i class="bi bi-hash"></i> ID Format
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="tab" href="#fields">
+            <i class="bi bi-list-columns"></i> Fields
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="tab" href="#access">
+            <i class="bi bi-shield-lock"></i> Access Control
+        </a>
+    </li>
+</ul>
+
+<div class="tab-content mt-3">
+    <!-- General Settings Tab -->
+    <div class="tab-pane fade show active" id="general">
+        <div class="card">
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="inventoryName" class="form-label">Inventory Name</label>
+                    <input type="text" class="form-control auto-save" id="inventoryName" 
+                           value="{{ inventory.name }}" data-field="name">
+                </div>
+                <div class="mb-3">
+                    <label for="inventoryDesc" class="form-label">Description</label>
+                    <textarea class="form-control auto-save" id="inventoryDesc" rows="4" 
+                              data-field="description">{{ inventory.description }}</textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="inventoryTags" class="form-label">Tags (comma separated)</label>
+                    <input type="text" class="form-control auto-save" id="inventoryTags" 
+                           value="{{ inventory.tags|join(', ') }}" data-field="tags">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ID Format Tab -->
+    <div class="tab-pane fade" id="idFormat">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="bi bi-puzzle"></i> ID Format Components
+                        <small class="text-muted ms-2">(Drag to reorder, drag out to remove)</small>
+                    </div>
+                    <div class="card-body">
+                        <div id="idComponentsList" class="d-flex flex-wrap gap-2 min-vh-10 p-3 border rounded bg-light" 
+                             style="min-height: 100px;">
+                            <!-- Components will be rendered here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mt-3">
+                    <div class="card-header"><i class="bi bi-plus-circle"></i> Add Component</div>
+                    <div class="card-body">
+                        <div class="d-flex flex-wrap gap-2">
+                            <button class="btn btn-outline-primary add-component" data-type="text">
+                                <i class="bi bi-fonts"></i> Text
+                            </button>
+                            <button class="btn btn-outline-success add-component" data-type="sequence">
+                                <i class="bi bi-123"></i> Sequence
+                            </button>
+                            <button class="btn btn-outline-info add-component" data-type="date">
+                                <i class="bi bi-calendar"></i> Date
+                            </button>
+                            <button class="btn btn-outline-warning add-component" data-type="random">
+                                <i class="bi bi-shuffle"></i> Random
+                            </button>
+                            <button class="btn btn-outline-secondary add-component" data-type="guid">
+                                <i class="bi bi-fingerprint"></i> GUID
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header"><i class="bi bi-eye"></i> Preview</div>
+                    <div class="card-body">
+                        <p class="mb-2">Next ID will be:</p>
+                        <code id="idPreview" class="h4 d-block p-3 bg-dark text-light rounded">Loading...</code>
+                        <small class="text-muted">Preview updates automatically</small>
+                    </div>
+                </div>
+                
+                <div class="card mt-3">
+                    <div class="card-header"><i class="bi bi-question-circle"></i> Help</div>
+                    <div class="card-body small">
+                        <p><strong>Text</strong>: Fixed prefix/suffix (e.g., "ITEM-")</p>
+                        <p><strong>Sequence</strong>: Auto-incrementing number with padding</p>
+                        <p><strong>Date</strong>: Current date in various formats</p>
+                        <p><strong>Random</strong>: Random digits (6-9 digits)</p>
+                        <p><strong>GUID</strong>: Unique identifier (8 chars)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fields Tab -->
+    <div class="tab-pane fade" id="fields">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-list-columns"></i> Custom Fields
+                <small class="text-muted ms-2">(Max 3 of each type)</small>
+            </div>
+            <div class="card-body">
+                {% for fieldType in ['string', 'text', 'int', 'bool', 'link'] %}
+                <div class="mb-4">
+                    <h6 class="text-uppercase text-muted">
+                        {% if fieldType == 'string' %}<i class="bi bi-text-left"></i> Single-Line Text
+                        {% elseif fieldType == 'text' %}<i class="bi bi-text-paragraph"></i> Multi-Line Text
+                        {% elseif fieldType == 'int' %}<i class="bi bi-123"></i> Number
+                        {% elseif fieldType == 'bool' %}<i class="bi bi-toggle-on"></i> Boolean
+                        {% elseif fieldType == 'link' %}<i class="bi bi-link-45deg"></i> Document/Image Link
+                        {% endif %}
+                    </h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th style="width: 60px;">Active</th>
+                                    <th>Name</th>
+                                    <th>Description (tooltip)</th>
+                                    <th style="width: 100px;">In Table</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for i in 1..3 %}
+                                {% set activeMethod = 'is' ~ fieldType|capitalize ~ i ~ 'Active' %}
+                                {% set nameMethod = 'get' ~ fieldType|capitalize ~ i ~ 'Name' %}
+                                {% set descMethod = 'get' ~ fieldType|capitalize ~ i ~ 'Desc' %}
+                                {% set inTableMethod = 'is' ~ fieldType|capitalize ~ i ~ 'InTable' %}
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" class="form-check-input field-toggle" 
+                                               data-type="{{ fieldType }}" data-index="{{ i }}" data-prop="active"
+                                               {% if attribute(inventory, activeMethod) %}checked{% endif %}>
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm field-input" 
+                                               data-type="{{ fieldType }}" data-index="{{ i }}" data-prop="name"
+                                               value="{{ attribute(inventory, nameMethod) }}" placeholder="Field name">
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm field-input" 
+                                               data-type="{{ fieldType }}" data-index="{{ i }}" data-prop="desc"
+                                               value="{{ attribute(inventory, descMethod) }}" placeholder="Tooltip text">
+                                    </td>
+                                    <td>
+                                        <input type="checkbox" class="form-check-input field-toggle" 
+                                               data-type="{{ fieldType }}" data-index="{{ i }}" data-prop="inTable"
+                                               {% if attribute(inventory, inTableMethod) %}checked{% endif %}>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Access Control Tab -->
+    <div class="tab-pane fade" id="access">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header"><i class="bi bi-people"></i> User Access</div>
+                    <div class="card-body">
+                        <div id="accessList">
+                            {% for access in inventory.accessList|default([]) %}
+                            <div class="d-flex align-items-center mb-2 p-2 border rounded">
+                                <span class="flex-grow-1">{{ access.user.email }}</span>
+                                <select class="form-select form-select-sm w-auto">
+                                    <option value="viewer" {% if access.role == 'viewer' %}selected{% endif %}>Viewer</option>
+                                    <option value="editor" {% if access.role == 'editor' %}selected{% endif %}>Editor</option>
+                                </select>
+                                <button class="btn btn-sm btn-outline-danger ms-2"><i class="bi bi-x"></i></button>
+                            </div>
+                            {% else %}
+                            <p class="text-muted">No users have been granted access yet.</p>
+                            {% endfor %}
+                        </div>
+                        
+                        <hr>
+                        
+                        <form id="addAccessForm" class="d-flex gap-2">
+                            <input type="email" class="form-control" id="accessEmail" placeholder="User email">
+                            <select class="form-select w-auto" id="accessRole">
+                                <option value="viewer">Viewer</option>
+                                <option value="editor">Editor</option>
+                            </select>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-plus"></i> Add
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header"><i class="bi bi-info-circle"></i> Access Roles</div>
+                    <div class="card-body small">
+                        <p><strong>Viewer</strong>: Can view items and discussions</p>
+                        <p><strong>Editor</strong>: Can add/edit items and post in discussions</p>
+                        <p><strong>Owner</strong>: Full control (that's you!)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a href="{{ path('app_inventory_show', {id: inventory.id}) }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Inventory
+    </a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const inventoryId = document.getElementById('inventoryId').value;
+    let saveTimeout = null;
+    let idComponents = {{ inventory.idFormatComponents|json_encode|raw }};
+    
+    // =====================
+    // AUTO-SAVE (7-10 sec)
+    // =====================
+    function scheduleSave() {
+        const badge = document.getElementById('saveStatus');
+        badge.textContent = 'Unsaved';
+        badge.classList.remove('bg-secondary', 'bg-success');
+        badge.classList.add('bg-warning');
+        
+        if (saveTimeout) clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(saveSettings, 7000);
+    }
+    
+    function saveSettings() {
+        const badge = document.getElementById('saveStatus');
+        badge.textContent = 'Saving...';
+        badge.classList.remove('bg-warning');
+        badge.classList.add('bg-info');
+        
+        const data = {
+            name: document.getElementById('inventoryName').value,
+            description: document.getElementById('inventoryDesc').value,
+            tags: document.getElementById('inventoryTags').value,
+            idFormatComponents: idComponents,
+            fields: collectFieldData(),
+            version: document.getElementById('inventoryVersion').value
+        };
+        
+        fetch('/inventory/' + inventoryId + '/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(r => r.json())
+        .then(result => {
+            if (result.success) {
+                badge.textContent = 'Saved';
+                badge.classList.remove('bg-info');
+                badge.classList.add('bg-success');
+                document.getElementById('inventoryVersion').value = result.version;
+                setTimeout(() => {
+                    badge.classList.remove('bg-success');
+                    badge.classList.add('bg-secondary');
+                }, 2000);
+            } else {
+                badge.textContent = 'Error!';
+                badge.classList.remove('bg-info');
+                badge.classList.add('bg-danger');
+                alert(result.error || 'Save failed');
+            }
+        })
+        .catch(() => {
+            badge.textContent = 'Error!';
+            badge.classList.remove('bg-info');
+            badge.classList.add('bg-danger');
+        });
+    }
+    
+    function collectFieldData() {
+        const fields = {};
+        document.querySelectorAll('.field-toggle, .field-input').forEach(el => {
+            const type = el.dataset.type;
+            const index = el.dataset.index;
+            const prop = el.dataset.prop;
+            const key = type + index + '_' + prop;
+            fields[key] = el.type === 'checkbox' ? el.checked : el.value;
+        });
+        return fields;
+    }
+    
+    // Bind auto-save to inputs
+    document.querySelectorAll('.auto-save, .field-toggle, .field-input').forEach(el => {
+        el.addEventListener('input', scheduleSave);
+        el.addEventListener('change', scheduleSave);
+    });
+    
+    // =====================
+    // ID FORMAT BUILDER
+    // =====================
+    function renderIdComponents() {
+        const container = document.getElementById('idComponentsList');
+        container.innerHTML = '';
+        
+        idComponents.forEach((comp, index) => {
+            const badge = document.createElement('div');
+            badge.className = 'badge bg-primary p-2 d-flex align-items-center gap-2';
+            badge.draggable = true;
+            badge.dataset.index = index;
+            
+            let label = '';
+            let config = '';
+            switch (comp.type) {
+                case 'text':
+                    label = '<i class="bi bi-fonts"></i> "' + (comp.value || 'TEXT') + '"';
+                    config = '<input type="text" class="form-control form-control-sm comp-config" style="width:80px" value="' + (comp.value || '') + '" placeholder="Text">';
+                    break;
+                case 'sequence':
+                    label = '<i class="bi bi-123"></i> SEQ(' + (comp.padding || 4) + ')';
+                    config = '<input type="number" class="form-control form-control-sm comp-config" style="width:50px" value="' + (comp.padding || 4) + '" min="1" max="10" title="Padding">';
+                    break;
+                case 'date':
+                    label = '<i class="bi bi-calendar"></i> ' + (comp.format || 'Ymd');
+                    config = '<select class="form-select form-select-sm comp-config" style="width:100px"><option value="Ymd" ' + (comp.format == 'Ymd' ? 'selected' : '') + '>20260114</option><option value="Y" ' + (comp.format == 'Y' ? 'selected' : '') + '>2026</option><option value="ym" ' + (comp.format == 'ym' ? 'selected' : '') + '>2601</option></select>';
+                    break;
+                case 'random':
+                    label = '<i class="bi bi-shuffle"></i> RND(' + (comp.digits || 6) + ')';
+                    config = '<input type="number" class="form-control form-control-sm comp-config" style="width:50px" value="' + (comp.digits || 6) + '" min="4" max="10" title="Digits">';
+                    break;
+                case 'guid':
+                    label = '<i class="bi bi-fingerprint"></i> GUID';
+                    break;
+            }
+            
+            badge.innerHTML = label + (config ? config : '') + '<button class="btn btn-sm btn-close btn-close-white remove-comp"></button>';
+            container.appendChild(badge);
+            
+            // Config change
+            const configInput = badge.querySelector('.comp-config');
+            if (configInput) {
+                configInput.addEventListener('change', function() {
+                    if (comp.type === 'text') comp.value = this.value;
+                    else if (comp.type === 'sequence') comp.padding = parseInt(this.value);
+                    else if (comp.type === 'date') comp.format = this.value;
+                    else if (comp.type === 'random') comp.digits = parseInt(this.value);
+                    updatePreview();
+                    scheduleSave();
+                });
+            }
+            
+            // Remove button
+            badge.querySelector('.remove-comp').addEventListener('click', function() {
+                idComponents.splice(index, 1);
+                renderIdComponents();
+                updatePreview();
+                scheduleSave();
+            });
+            
+            // Drag events
+            badge.addEventListener('dragstart', e => e.dataTransfer.setData('text/plain', index));
+            badge.addEventListener('dragover', e => e.preventDefault());
+            badge.addEventListener('drop', e => {
+                e.preventDefault();
+                const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
+                const toIndex = index;
+                if (fromIndex !== toIndex) {
+                    const [moved] = idComponents.splice(fromIndex, 1);
+                    idComponents.splice(toIndex, 0, moved);
+                    renderIdComponents();
+                    updatePreview();
+                    scheduleSave();
+                }
+            });
+        });
+    }
+    
+    // Add component buttons
+    document.querySelectorAll('.add-component').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const type = this.dataset.type;
+            let comp = { type };
+            if (type === 'text') comp.value = 'ITEM-';
+            if (type === 'sequence') comp.padding = 4;
+            if (type === 'date') comp.format = 'Ymd';
+            if (type === 'random') comp.digits = 6;
+            idComponents.push(comp);
+            renderIdComponents();
+            updatePreview();
+            scheduleSave();
+        });
+    });
+    
+    function updatePreview() {
+        let preview = '';
+        idComponents.forEach(comp => {
+            switch (comp.type) {
+                case 'text': preview += comp.value || ''; break;
+                case 'sequence': preview += '0001'.slice(-comp.padding || 4); break;
+                case 'date':
+                    const now = new Date();
+                    if (comp.format === 'Ymd') preview += now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0');
+                    else if (comp.format === 'Y') preview += now.getFullYear();
+                    else if (comp.format === 'ym') preview += String(now.getFullYear()).slice(-2) + String(now.getMonth()+1).padStart(2,'0');
+                    break;
+                case 'random': preview += ''.padStart(comp.digits || 6, 'X'); break;
+                case 'guid': preview += 'XXXXXXXX'; break;
+            }
+        });
+        document.getElementById('idPreview').textContent = preview || '(empty)';
+    }
+    
+    // Initialize
+    renderIdComponents();
+    updatePreview();
+});
+</script>
+{% endblock %}

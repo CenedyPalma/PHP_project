@@ -1,0 +1,59 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ 'nav.login'|trans }}{% endblock %}
+
+{% block body %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow">
+            <div class="card-body">
+                <h3 class="card-title text-center mb-4"><i class="bi bi-box-seam"></i> Inventory System</h3>
+                
+                {% if error %}
+                    <div class="alert alert-danger">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
+                {% endif %}
+
+                <!-- Email/Password Login Form -->
+                <form method="post">
+                    <div class="mb-3">
+                        <label for="inputEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="inputEmail" name="_username" 
+                               value="{{ last_username }}" required autofocus>
+                    </div>
+                    <div class="mb-3">
+                        <label for="inputPassword" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="inputPassword" name="_password" required>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="rememberMe" name="_remember_me">
+                        <label class="form-check-label" for="rememberMe">Remember me</label>
+                    </div>
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">{{ 'nav.login'|trans }}</button>
+                    </div>
+                </form>
+
+                <hr class="my-4">
+
+                <p class="text-center text-muted mb-3">Or continue with</p>
+
+                <div class="d-grid gap-2">
+                    <a href="{{ path('connect_google') }}" class="btn btn-outline-danger">
+                        <i class="bi bi-google"></i> Google
+                    </a>
+                    <a href="{{ path('connect_facebook') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-facebook"></i> Facebook
+                    </a>
+                </div>
+
+                <hr class="my-4">
+
+                <p class="text-center">
+                    Don't have an account? <a href="{{ path('app_register') }}">Register</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

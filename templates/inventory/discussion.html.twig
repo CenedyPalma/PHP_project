@@ -1,0 +1,107 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Discussion: {{ inventory.name }}{% endblock %}
+
+{% block body %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ path('app_home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ path('app_inventory_show', {id: inventory.id}) }}">{{ inventory.name }}</a></li>
+        <li class="breadcrumb-item active">Discussion</li>
+    </ol>
+</nav>
+
+<h3><i class="bi bi-chat-dots"></i> Discussion</h3>
+<hr>
+
+<div id="discussionContainer" class="mb-4" style="max-height: 500px; overflow-y: auto;">
+    {% for post in posts %}
+    <div class="card mb-2" data-post-id="{{ post.id }}">
+        <div class="card-body py-2">
+            <div class="d-flex justify-content-between">
+                <strong>
+                    <a href="{{ path('app_user_profile', {id: post.author.id}) }}">{{ post.author.name }}</a>
+                </strong>
+                <small class="text-muted">{{ post.createdAt|date('M d, Y H:i') }}</small>
+            </div>
+            <div class="mt-1">{{ post.content|nl2br }}</div>
+        </div>
+    </div>
+    {% else %}
+    <p class="text-muted" id="noPostsMsg">No discussion yet. Start the conversation!</p>
+    {% endfor %}
+</div>
+
+{% if app.user %}
+<form id="discussionForm" method="post">
+    <div class="input-group">
+        <textarea class="form-control" name="content" placeholder="Write a message..." rows="2" required></textarea>
+        <button class="btn btn-primary" type="submit"><i class="bi bi-send"></i> Post</button>
+    </div>
+</form>
+{% else %}
+<div class="alert alert-warning">
+    <a href="{{ path('app_login') }}">Login</a> to participate in the discussion.
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('discussionContainer');
+    let lastPostId = {{ posts|length > 0 ? posts|last.id : 0 }};
+    
+    // Poll for new posts every 3 seconds
+    setInterval(function() {
+        fetch('{{ path('app_inventory_discussion', {id: inventory.id}) }}?after=' + lastPostId, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.posts && data.posts.length > 0) {
+                const noMsg = document.getElementById('noPostsMsg');
+                if (noMsg) noMsg.remove();
+                
+                data.posts.forEach(function(post) {
+                    const html = `
+                        <div class="card mb-2" data-post-id="${post.id}">
+                            <div class="card-body py-2">
+                                <div class="d-flex justify-content-between">
+                                    <strong><a href="/user/${post.authorId}">${post.author}</a></strong>
+                                    <small class="text-muted">${post.createdAt}</small>
+                                </div>
+                                <div class="mt-1">${post.content}</div>
+                            </div>
+                        </div>
+                    `;
+                    container.insertAdjacentHTML('beforeend', html);
+                    lastPostId = post.id;
+                });
+                container.scrollTop = container.scrollHeight;
+            }
+        });
+    }, 3000);
+
+    // Submit via AJAX
+    const form = document.getElementById('discussionForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(form);
+            fetch('{{ path('app_inventory_discussion', {id: inventory.id}) }}', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    form.reset();
+                }
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

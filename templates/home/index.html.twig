@@ -1,0 +1,104 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ 'nav.home'|trans }} - Inventory{% endblock %}
+
+{% block body %}
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Latest Inventories -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-clock-history"></i> {{ 'inventory.title'|trans }}</span>
+                {% if app.user %}
+                <a href="{{ path('app_inventory_new') }}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus"></i> {{ 'inventory.create'|trans }}
+                </a>
+                {% endif %}
+            </div>
+            <div class="card-body p-0">
+                {% if latestInventories|length > 0 %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>{{ 'inventory.name'|trans }}</th>
+                                <th>{{ 'inventory.items'|trans }}</th>
+                                <th>{{ 'inventory.tags'|trans }}</th>
+                                <th>Created</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for inventory in latestInventories %}
+                            <tr style="cursor: pointer;" onclick="window.location='{{ path('app_inventory_show', {id: inventory.id}) }}'">
+                                <td>
+                                    <strong>{{ inventory.name }}</strong>
+                                    {% if inventory.description %}
+                                    <br><small class="text-muted">{{ inventory.description|slice(0, 60) }}{% if inventory.description|length > 60 %}...{% endif %}</small>
+                                    {% endif %}
+                                </td>
+                                <td><span class="badge bg-primary">{{ inventory.items|length }}</span></td>
+                                <td>
+                                    {% for tag in inventory.tags|slice(0, 3) %}
+                                    <span class="badge bg-secondary">{{ tag }}</span>
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ inventory.createdAt|date('M d, Y') }}</small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="p-4 text-center text-muted">
+                    <i class="bi bi-inbox h1"></i>
+                    <p>No inventories yet.</p>
+                    {% if app.user %}
+                    <a href="{{ path('app_inventory_new') }}" class="btn btn-primary">Create Your First Inventory</a>
+                    {% else %}
+                    <a href="{{ path('app_login') }}" class="btn btn-primary">Login to Create</a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Popular Inventories -->
+        <div class="card mb-4">
+            <div class="card-header"><i class="bi bi-star"></i> Top 5 Popular</div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for inventory in popularInventories %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <a href="{{ path('app_inventory_show', {id: inventory.id}) }}" class="text-decoration-none">
+                            {{ inventory.name }}
+                        </a>
+                        <span class="badge bg-primary">{{ inventory.items|length }} items</span>
+                    </li>
+                    {% else %}
+                    <li class="list-group-item text-muted">No inventories yet</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- Tag Cloud -->
+        <div class="card">
+            <div class="card-header"><i class="bi bi-tags"></i> Tag Cloud</div>
+            <div class="card-body tag-cloud">
+                {% for tag, count in tagCloud %}
+                <a href="{{ path('app_search', {tag: tag}) }}" class="badge bg-secondary text-decoration-none" 
+                   style="font-size: {{ 0.75 + (count * 0.1) }}rem;">
+                    {{ tag }} ({{ count }})
+                </a>
+                {% else %}
+                <p class="text-muted mb-0">No tags yet</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

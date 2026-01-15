@@ -1,0 +1,52 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}My Inventories{% endblock %}
+
+{% block body %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>My Inventories</h2>
+    <a href="{{ path('app_inventory_new') }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Create New Inventory
+    </a>
+</div>
+
+{% if inventories|length > 0 %}
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Active Fields</th>
+                <th>Items</th>
+                <th>Created</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for inventory in inventories %}
+            <tr style="cursor: pointer;" onclick="window.location='{{ path('app_inventory_show', {id: inventory.id}) }}'">
+                <td>
+                    <strong>{{ inventory.name }}</strong>
+                </td>
+                <td>{{ inventory.description|slice(0, 50) }}{% if inventory.description|length > 50 %}...{% endif %}</td>
+                <td><span class="badge bg-info">{{ inventory.activeFields|length }}</span></td>
+                <td><span class="badge bg-secondary">{{ inventory.items|length }}</span></td>
+                <td>{{ inventory.createdAt|date('M d, Y') }}</td>
+                <td>
+                    <a href="{{ path('app_inventory_edit', {id: inventory.id}) }}" class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation();">
+                        <i class="bi bi-gear"></i>
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> You haven't created any inventories yet.
+    <a href="{{ path('app_inventory_new') }}">Create your first one!</a>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,39 @@
+nav:
+  home: "হোম"
+  inventories: "আমার ইনভেন্টরি"
+  create: "ইনভেন্টরি তৈরি করুন"
+  login: "লগইন"
+  logout: "লগআউট"
+  profile: "আমার প্রোফাইল"
+  search: "ইনভেন্টরি খুঁজুন..."
+
+inventory:
+  title: "ইনভেন্টরি সমূহ"
+  create: "নতুন ইনভেন্টরি তৈরি করুন"
+  edit: "ইনভেন্টরি সম্পাদনা"
+  delete: "ইনভেন্টরি মুছুন"
+  name: "নাম"
+  description: "বিবরণ"
+  tags: "ট্যাগ"
+  fields: "ফিল্ড"
+  items: "আইটেম"
+  discussion: "আলোচনা"
+  settings: "সেটিংস"
+  add_item: "আইটেম যোগ করুন"
+
+item:
+  title: "আইটেম সমূহ"
+  create: "নতুন আইটেম যোগ করুন"
+  edit: "আইটেম সম্পাদনা"
+  delete: "আইটেম মুছুন"
+  likes: "পছন্দ"
+  view_selected: "নির্বাচিত দেখুন"
+  delete_selected: "নির্বাচিত মুছুন"
+
+common:
+  save: "সংরক্ষণ করুন"
+  cancel: "বাতিল"
+  yes: "হ্যাঁ"
+  no: "না"
+  active: "সক্রিয়"
+  show_in_table: "টেবিলে দেখান"

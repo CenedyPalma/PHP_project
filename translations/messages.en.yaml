@@ -1,0 +1,39 @@
+nav:
+  home: "Home"
+  inventories: "My Inventories"
+  create: "Create Inventory"
+  login: "Login"
+  logout: "Logout"
+  profile: "My Profile"
+  search: "Search inventories..."
+
+inventory:
+  title: "Inventories"
+  create: "Create New Inventory"
+  edit: "Edit Inventory"
+  delete: "Delete Inventory"
+  name: "Name"
+  description: "Description"
+  tags: "Tags"
+  fields: "Fields"
+  items: "Items"
+  discussion: "Discussion"
+  settings: "Settings"
+  add_item: "Add Item"
+
+item:
+  title: "Items"
+  create: "Add New Item"
+  edit: "Edit Item"
+  delete: "Delete Item"
+  likes: "Likes"
+  view_selected: "View Selected"
+  delete_selected: "Delete Selected"
+
+common:
+  save: "Save"
+  cancel: "Cancel"
+  yes: "Yes"
+  no: "No"
+  active: "Active"
+  show_in_table: "Show in Table"

@@ -1,0 +1,64 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Search Results{% endblock %}
+
+{% block body %}
+<h2><i class="bi bi-search"></i> Search Results</h2>
+
+{% if query %}
+<p class="text-muted">Results for: <strong>"{{ query }}"</strong></p>
+{% elseif tag %}
+<p class="text-muted">Inventories tagged: <span class="badge bg-primary">{{ tag }}</span></p>
+{% endif %}
+
+<div class="card">
+    <div class="card-body p-0">
+        {% if results|length > 0 %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>{{ 'inventory.name'|trans }}</th>
+                        <th>{{ 'inventory.description'|trans }}</th>
+                        <th>{{ 'inventory.items'|trans }}</th>
+                        <th>{{ 'inventory.tags'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inventory in results %}
+                    <tr style="cursor: pointer;" onclick="window.location='{{ path('app_inventory_show', {id: inventory.id}) }}'">
+                        <td><strong>{{ inventory.name }}</strong></td>
+                        <td>
+                            <small class="text-muted">
+                                {{ inventory.description|slice(0, 80) }}{% if inventory.description|length > 80 %}...{% endif %}
+                            </small>
+                        </td>
+                        <td><span class="badge bg-primary">{{ inventory.items|length }}</span></td>
+                        <td>
+                            {% for tag in inventory.tags|slice(0, 3) %}
+                            <a href="{{ path('app_search', {tag: tag}) }}" 
+                               class="badge bg-secondary text-decoration-none"
+                               onclick="event.stopPropagation();">{{ tag }}</a>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-5 text-center">
+            <i class="bi bi-search h1 text-muted"></i>
+            <p class="text-muted mt-3">
+                {% if query or tag %}
+                No results found. Try different keywords.
+                {% else %}
+                Enter a search term above.
+                {% endif %}
+            </p>
+            <a href="{{ path('app_home') }}" class="btn btn-outline-primary">Browse All Inventories</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
